@@ -1,0 +1,37 @@
+[project]
+name = "ut-cs6300-project"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ryan Poppe",email = "ryanpoppe42@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4"
+dependencies = [
+    "langchain (>=1.0.0a14,<2.0.0)",
+    "langchain-google-genai (>=2.1.12,<3.0.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
+    "pydantic (>=2.12.0,<3.0.0)",
+    "duckduckgo-search (>=8.1.1,<9.0.0)",
+    "langchain-community (>=0.3.31,<0.4.0)",
+    "ddgs (>=9.6.0,<10.0.0)",
+    "requests (>=2.32.5,<3.0.0)",
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+
+[tool.poetry.dependencies]
+langchain = {allow-prereleases = true}
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "agents"
+testpaths = [
+    "tests"
+]
