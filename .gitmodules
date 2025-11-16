@@ -1,0 +1,3 @@
+[submodule "data/pfaf-data"]
+	path = data/pfaf-data
+	url = https://github.com/saulshanabrook/pfaf-data.git

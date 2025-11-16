@@ -51,7 +51,7 @@ Action Input: {"zipcode": "10001"}""",
 Action: query_plant_database
 Action Input: {"hardiness_zone": "7b", "sun_requirement": "full_sun"}""",
         """Thought: I have all the information needed
-Final Answer: For Zone 7b with full sun, suitable plants include Tomato, Basil, and Marigold."""
+Final Answer: For Zone 7b with full sun, suitable plants include Okra and Silver Fir."""
     ]
     
     llm = MockLLM(responses)
@@ -66,7 +66,7 @@ Final Answer: For Zone 7b with full sun, suitable plants include Tomato, Basil, 
     
     assert agent.state.is_complete
     assert len(agent.state.tool_calls) == 2
-    assert any("Tomato" in str(call) or "Basil" in str(call) for call in agent.state.tool_calls)
+    assert any("Okra" in str(call) or "Fir" in str(call) for call in agent.state.tool_calls)
 
 
 def test_react_agent_max_steps():

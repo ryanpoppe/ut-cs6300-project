@@ -67,8 +67,8 @@ def test_query_plant_database_with_whitelist():
     )
     
     plant_names = [p["common_name"] for p in result["plant_list"]]
-    assert "Basil" in plant_names
-    assert len(plant_names) == 1
+    assert any("Basil" in name for name in plant_names)
+    assert all("Basil" in name for name in plant_names)
 
 
 def test_query_plant_database_no_matches():

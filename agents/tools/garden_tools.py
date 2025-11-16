@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from agents.tools.tool_registry import Tool
+from agents.tools.pfaf_database import PFAFDatabase
 
 
 class GetClimateDataTool(Tool):
@@ -61,7 +62,7 @@ class GetClimateDataTool(Tool):
 
 
 class QueryPlantDatabaseTool(Tool):
-    def __init__(self):
+    def __init__(self, pfaf_db: Optional[PFAFDatabase] = None):
         super().__init__(
             name="query_plant_database",
             description="Searches for plants matching growing requirements",
@@ -79,7 +80,7 @@ class QueryPlantDatabaseTool(Tool):
                 },
                 "plant_type": {
                     "type": "string",
-                    "enum": ["vegetable", "herb", "flower", "fruit"],
+                    "enum": ["vegetable", "herb", "flower", "fruit", "perennial", "annual"],
                     "description": "Type of plant",
                     "required": False
                 },
@@ -106,9 +107,14 @@ class QueryPlantDatabaseTool(Tool):
                 }
             }
         )
-        self.plant_database = self._load_plant_database()
+        try:
+            self.pfaf_db = pfaf_db or PFAFDatabase()
+            self.use_pfaf = True
+        except FileNotFoundError:
+            self.use_pfaf = False
+            self.plant_database = self._load_fallback_database()
     
-    def _load_plant_database(self) -> List[Dict[str, Any]]:
+    def _load_fallback_database(self) -> List[Dict[str, Any]]:
         return [
             {
                 "common_name": "Tomato",
@@ -253,10 +259,38 @@ class QueryPlantDatabaseTool(Tool):
         zone = kwargs.get("hardiness_zone")
         sun = kwargs.get("sun_requirement")
         plant_type = kwargs.get("plant_type")
-        space = kwargs.get("space_category")
-        goal = kwargs.get("growing_goal")
         whitelist = kwargs.get("whitelist", [])
         blacklist = kwargs.get("blacklist", [])
+        
+        if self.use_pfaf:
+            try:
+                results = self.pfaf_db.query_plants(
+                    hardiness_zone=zone,
+                    sun_requirement=sun,
+                    plant_type=plant_type,
+                    edible_only=True,
+                    whitelist=whitelist,
+                    blacklist=blacklist,
+                    limit=20
+                )
+                
+                if not results:
+                    return {
+                        "plant_list": [],
+                        "message": "No plants found matching criteria in PFAF database. Consider relaxing constraints.",
+                        "source": "PFAF"
+                    }
+                
+                return {
+                    "plant_list": results[:10],
+                    "source": "PFAF",
+                    "total_found": len(results)
+                }
+            except Exception as e:
+                return {
+                    "error": f"Error querying PFAF database: {str(e)}",
+                    "source": "PFAF"
+                }
         
         zone_num = ''.join(filter(str.isdigit, zone)) if zone else ""
         
@@ -280,18 +314,19 @@ class QueryPlantDatabaseTool(Tool):
             if plant_type and plant["plant_type"] != plant_type:
                 continue
             
-            if space and plant["space_category"] != space:
-                continue
-            
             results.append(plant)
         
         if not results:
             return {
                 "plant_list": [],
-                "message": "No plants found matching criteria. Consider relaxing constraints."
+                "message": "No plants found matching criteria. Consider relaxing constraints.",
+                "source": "fallback"
             }
         
-        return {"plant_list": results}
+        return {
+            "plant_list": results,
+            "source": "fallback"
+        }
 
 
 class CheckCompanionCompatibilityTool(Tool):
