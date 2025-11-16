@@ -1,0 +1,43 @@
+{
+  "dataset": [
+    {
+      "input": "Zipcode: 94102, Planters: 1 raised bed 4ft x 8ft, Shade: Full sun, Goal: Food production, Preferences: Likes tomatoes, no eggplant",
+      "expected_output": "Zone 10a garden plan with tomatoes, basil, and companion plants",
+      "expected_trajectory": [
+        {"action": "get_climate_data"},
+        {"action": "query_plant_database"},
+        {"action": "check_companion_compatibility"},
+        {"action": "calculate_planter_layout"},
+        {"action": "generate_planting_schedule"}
+      ]
+    },
+    {
+      "input": "Zipcode: 10001, Planters: 3 containers 18\" diameter, Shade: Full shade, Goal: Herbs, Preferences: None",
+      "expected_output": "Zone 7b shade herb garden with parsley, cilantro, mint in separate containers",
+      "expected_trajectory": [
+        {"action": "get_climate_data"},
+        {"action": "query_plant_database"},
+        {"action": "calculate_planter_layout"}
+      ]
+    },
+    {
+      "input": "Zipcode: 55401, Planters: 2 small pots 10\" x 10\", Shade: Partial, Goal: Watermelons and pumpkins, Preferences: None",
+      "expected_output": "Explanation of infeasibility and alternative suggestions",
+      "expected_trajectory": [
+        {"action": "get_climate_data"},
+        {"action": "query_plant_database"}
+      ]
+    },
+    {
+      "input": "Zipcode: 78701, Planters: 1 raised bed 3ft x 6ft, Shade: Full sun, Goal: Maximize yield, Preferences: Loves salads and peppers",
+      "expected_output": "Zone 9a succession planting plan with lettuce, peppers, and season rotation",
+      "expected_trajectory": [
+        {"action": "get_climate_data"},
+        {"action": "query_plant_database"},
+        {"action": "check_companion_compatibility"},
+        {"action": "calculate_planter_layout"},
+        {"action": "generate_planting_schedule"}
+      ]
+    }
+  ]
+}
