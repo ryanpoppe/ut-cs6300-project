@@ -1,10 +1,14 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+import csv
+import os
 from agents.tools.tool_registry import Tool
 from agents.tools.pfaf_database import PFAFDatabase
 
 
 class GetClimateDataTool(Tool):
+    _climate_database = None
+    
     def __init__(self):
         super().__init__(
             name="get_climate_data",
@@ -17,35 +21,43 @@ class GetClimateDataTool(Tool):
                 }
             }
         )
-        self.climate_database = self._load_climate_data()
     
     def _load_climate_data(self) -> Dict[str, Any]:
-        return {
-            "94102": {
-                "hardiness_zone": "10a",
-                "last_spring_frost": "N/A (frost-free)",
-                "first_fall_frost": "N/A (frost-free)",
-                "growing_season_days": 365
-            },
-            "10001": {
-                "hardiness_zone": "7b",
-                "last_spring_frost": "2024-04-15",
-                "first_fall_frost": "2024-11-15",
-                "growing_season_days": 214
-            },
-            "55401": {
-                "hardiness_zone": "5a",
-                "last_spring_frost": "2024-05-10",
-                "first_fall_frost": "2024-10-01",
-                "growing_season_days": 144
-            },
-            "78701": {
-                "hardiness_zone": "9a",
-                "last_spring_frost": "2024-03-01",
-                "first_fall_frost": "2024-12-01",
-                "growing_season_days": 275
-            }
-        }
+        if GetClimateDataTool._climate_database is not None:
+            return GetClimateDataTool._climate_database
+        
+        GetClimateDataTool._climate_database = {}
+        csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'phzm_us_zipcode_2023.csv')
+        
+        try:
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    zipcode = row['zipcode']
+                    zone = row['zone']
+                    last_spring = row['last_spring_frost']
+                    first_fall = row['first_fall_frost']
+                    growing_season = row['growing_season']
+                    
+                    days_match = growing_season.split()[0] if growing_season else "0"
+                    try:
+                        days = int(days_match)
+                    except ValueError:
+                        days = 0
+                    
+                    last_spring_date = f"2024-{last_spring.replace(' ', '-')}" if last_spring and last_spring != "N/A" else "N/A (frost-free)"
+                    first_fall_date = f"2024-{first_fall.replace(' ', '-')}" if first_fall and first_fall != "N/A" else "N/A (frost-free)"
+                    
+                    GetClimateDataTool._climate_database[zipcode] = {
+                        "hardiness_zone": zone,
+                        "last_spring_frost": last_spring_date,
+                        "first_fall_frost": first_fall_date,
+                        "growing_season_days": days
+                    }
+        except FileNotFoundError:
+            pass
+        
+        return GetClimateDataTool._climate_database
     
     def run(self, **kwargs) -> Dict[str, Any]:
         zipcode = kwargs.get("zipcode")
@@ -53,12 +65,14 @@ class GetClimateDataTool(Tool):
         if not zipcode or len(zipcode) != 5:
             return {"error": "Invalid zipcode format. Please provide a 5-digit US postal code."}
         
-        if zipcode not in self.climate_database:
+        climate_db = self._load_climate_data()
+        
+        if zipcode not in climate_db:
             return {
                 "error": f"Zipcode {zipcode} not found in database. Please provide a different zipcode or your USDA zone manually."
             }
         
-        return self.climate_database[zipcode]
+        return climate_db[zipcode]
 
 
 class QueryPlantDatabaseTool(Tool):
@@ -75,15 +89,15 @@ class QueryPlantDatabaseTool(Tool):
                 "sun_requirement": {
                     "type": "string",
                     "enum": ["full_sun", "partial_shade", "full_shade"],
-                    "description": "Sunlight needs",
+                    "description": "Sunlight needs (e.g. full_sun, partial_shade, full_shade)",
                     "required": True
                 },
-                "plant_type": {
-                    "type": "string",
-                    "enum": ["vegetable", "herb", "flower", "fruit", "perennial", "annual"],
-                    "description": "Type of plant",
-                    "required": False
-                },
+                # "plant_type": {
+                #     "type": "string",
+                #     "enum": ["Annual", "Annual Climber", "Annual/Biennial", "Annual/Perennial", "Bamboo", "Biennial", "Biennial/Perennial", "Bulb", "Climber", "Climber Perennial", "Corm", "Fern", "Lichen", "Perennial", "Perennial Climber", "Shrub", "Tree"],
+                #     "description": "Type of plant",
+                #     "required": False
+                # },
                 "space_category": {
                     "type": "string",
                     "enum": ["small", "medium", "large"],
@@ -95,13 +109,19 @@ class QueryPlantDatabaseTool(Tool):
                     "description": "User's growing goal",
                     "required": False
                 },
-                "whitelist": {
-                    "type": "array",
-                    "description": "Specific plants user wants",
-                    "required": False
-                },
+                # "whitelist": {
+                #     "type": "array",
+                #     "items": {
+                #         "type": "string"
+                #     },
+                #     "description": "Specific plants user wants",
+                #     "required": False
+                # },
                 "blacklist": {
                     "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
                     "description": "Plants to exclude",
                     "required": False
                 }
@@ -421,6 +441,9 @@ class CalculatePlanterLayoutTool(Tool):
                 },
                 "selected_plants": {
                     "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
                     "description": "List of plants with spacing requirements",
                     "required": True
                 },
@@ -503,6 +526,9 @@ class GeneratePlantingScheduleTool(Tool):
             parameters={
                 "plants": {
                     "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
                     "description": "Selected plants with maturity data",
                     "required": True
                 },

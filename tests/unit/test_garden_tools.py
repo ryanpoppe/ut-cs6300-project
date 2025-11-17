@@ -14,7 +14,7 @@ def test_get_climate_data_tool():
     
     result = tool.run(zipcode="94102")
     assert "hardiness_zone" in result
-    assert result["hardiness_zone"] == "10a"
+    assert result["hardiness_zone"] == "10b"
     assert "growing_season_days" in result
 
 

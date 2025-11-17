@@ -83,11 +83,11 @@ def main():
     print("Garden Design Assistant - ReAct Agent Example")
     print("=" * 50)
     
-    agent = create_garden_agent(use_real_llm=False)
+    agent = create_garden_agent(use_real_llm=True)
     
     user_input = """
     I want to plan a vegetable garden for my backyard.
-    Zipcode: 94102
+    Zipcode: 84790
     Planter: 1 raised bed, 4 feet by 8 feet
     Sunlight: Full sun (6+ hours daily)
     Goal: Food production

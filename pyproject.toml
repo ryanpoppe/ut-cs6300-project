@@ -16,6 +16,7 @@ dependencies = [
     "langchain-community (>=0.3.31,<0.4.0)",
     "ddgs (>=9.6.0,<10.0.0)",
     "requests (>=2.32.5,<3.0.0)",
+    "beautifulsoup4 (>=4.14.2,<5.0.0)",
 ]
 
 [tool.poetry]
@@ -31,7 +32,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = "agents"
+pythonpath = "."
 testpaths = [
     "tests"
 ]

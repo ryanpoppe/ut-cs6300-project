@@ -1,5 +1,8 @@
 from typing import Any, Callable, Dict, List, Optional
 from abc import ABC, abstractmethod
+from langchain_core.tools import BaseTool as LangChainBaseTool
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field, create_model
 
 
 class Tool(ABC):
@@ -25,6 +28,48 @@ class Tool(ABC):
             "description": self.description,
             "parameters": self.parameters
         }
+    
+    def to_langchain_tool(self) -> LangChainBaseTool:
+        fields = {}
+        for param_name, param_spec in self.parameters.items():
+            param_type = param_spec.get("type", "string")
+            param_desc = param_spec.get("description", "")
+            is_required = param_spec.get("required", False)
+            
+            if param_type == "string":
+                field_type = str
+            elif param_type == "integer":
+                field_type = int
+            elif param_type == "boolean":
+                field_type = bool
+            elif param_type == "array":
+                items_spec = param_spec.get("items", {})
+                items_type = items_spec.get("type", "string")
+                if items_type == "string":
+                    field_type = List[str]
+                elif items_type == "object":
+                    field_type = List[Dict[str, Any]]
+                else:
+                    field_type = List[Any]
+            elif param_type == "object":
+                field_type = Dict[str, Any]
+            else:
+                field_type = Any
+            
+            if not is_required:
+                field_type = Optional[field_type]
+                fields[param_name] = (field_type, Field(default=None, description=param_desc))
+            else:
+                fields[param_name] = (field_type, Field(..., description=param_desc))
+        
+        args_schema = create_model(f"{self.name}_args", **fields) if fields else None
+        
+        return StructuredTool(
+            name=self.name,
+            description=self.description,
+            func=self.run,
+            args_schema=args_schema
+        )
 
 
 class FunctionTool(Tool):
@@ -70,6 +115,9 @@ class ToolRegistry:
         if not tool:
             raise ValueError(f"Tool '{tool_name}' not found in registry")
         return tool.run(**kwargs)
+    
+    def get_langchain_tools(self) -> List[LangChainBaseTool]:
+        return [tool.to_langchain_tool() for tool in self._tools.values()]
     
     def clear(self):
         self._tools.clear()
